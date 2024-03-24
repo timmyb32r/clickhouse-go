@@ -65,7 +65,7 @@ func (c *connect) prepareBatch(ctx context.Context, query string, opts driver.Pr
 
 	b := &batch{
 		ctx:         ctx,
-		query:       query,
+		query:       batchQuery,
 		conn:        c,
 		block:       block,
 		released:    false,

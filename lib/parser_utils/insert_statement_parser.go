@@ -12,6 +12,7 @@ func ExtractQueryAndColumns(query string) (string, []string, error) {
 	inputStream := antlr.NewInputStream(query)
 	currLexer := lexer.NewClickHouseLexer(inputStream)
 	lParenPassed := false
+	valuesPresent := false
 	for {
 		t := currLexer.NextToken()
 		if t.GetTokenType() == antlr.TokenEOF {
@@ -20,15 +21,20 @@ func ExtractQueryAndColumns(query string) (string, []string, error) {
 		queryBuilder.WriteString(t.GetText())
 		queryBuilder.WriteString(" ")
 		if t.GetTokenType() == lexer.ClickHouseLexerVALUES && strings.ToUpper(t.GetText()) == "VALUES" {
+			valuesPresent = true
 			break
+		}
+		if lParenPassed && t.GetTokenType() != lexer.ClickHouseLexerCOMMA && t.GetTokenType() != lexer.ClickHouseLexerRPAREN {
+			columnName := strings.Trim(strings.Trim(strings.TrimSpace(t.GetText()), "\""), "`")
+			columns = append(columns, columnName)
 		}
 		if t.GetTokenType() == lexer.ClickHouseLexerLPAREN {
 			lParenPassed = true
 		}
-		if lParenPassed && t.GetTokenType() == lexer.ClickHouseLexerIDENTIFIER {
-			columnName := strings.Trim(strings.TrimSpace(t.GetText()), "`")
-			columns = append(columns, columnName)
-		}
+	}
+
+	if !valuesPresent {
+		queryBuilder.WriteString("VALUES")
 	}
 	return queryBuilder.String(), columns, nil
 }
